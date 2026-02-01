@@ -119,7 +119,12 @@ func handleConnection(clientConn *net.TCPConn, isHttps bool) {
 		return
 	}
 
-	log.Printf("SNI: %s", serverName)
+	if serverName == "" {
+		log.Printf("rejected: missing SNI/Host header")
+		return
+	}
+
+	log.Printf("routing %s -> SOCKS5", serverName)
 
 	dstPort := config.Server.HttpPort
 	if isHttps {
@@ -128,7 +133,7 @@ func handleConnection(clientConn *net.TCPConn, isHttps bool) {
 
 	backendConn, err := socks5Client.Dial(net.JoinHostPort(serverName, dstPort))
 	if err != nil {
-		log.Printf("socks5 dial error: %v", err)
+		log.Printf("socks5 dial error for %s: %v", serverName, err)
 		return
 	}
 	defer backendConn.Close()
