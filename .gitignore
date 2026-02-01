@@ -1,0 +1,16 @@
+# Binaries
+dist/
+build/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# OS Metadata
+.DS_Store
+Thumbs.db
+
+# Go
+vendor/
+go.work
