@@ -1,0 +1,18 @@
+[Unit]
+Description=NginS SNI Proxy (Service Instance: %I)
+ConditionFileIsExecutable=/opt/ngins/ngins
+After=multi-user.target syslog.target network-online.target
+
+[Service]
+StartLimitInterval=5
+StartLimitBurst=10
+Type=simple
+Restart=always
+RestartSec=5
+WorkingDirectory=/opt/ngins
+ExecStart=/opt/ngins/ngins -C %i
+StandardOutput=append:/var/log/ngins.%i.log
+StandardError=append:/var/log/ngins.%i.err
+
+[Install]
+WantedBy=multi-user.target
