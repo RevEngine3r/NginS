@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"io"
 	"log"
 	"net"
@@ -11,7 +10,7 @@ import (
 	"time"
 
 	"github.com/RevEngine3r/NginS/handlers"
-	"github.com/haochen233/socks5"
+	"github.com/RevEngine3r/NginS/internal/socks5"
 	"gopkg.in/yaml.v3"
 )
 
@@ -25,13 +24,15 @@ type Config struct {
 	Proxy struct {
 		Socks5Host string `yaml:"socks5Host"`
 		Socks5Port string `yaml:"socks5Port"`
+		Username   string `yaml:"username"`
+		Password   string `yaml:"password"`
 	} `yaml:"proxy"`
 }
 
 var (
 	config       Config
 	configFile   *string
-	socks5Client socks5.Client
+	socks5Client *socks5.Client
 )
 
 func readConfig() {
@@ -59,11 +60,10 @@ func main() {
 
 	readConfig()
 
-	socks5Client = socks5.Client{
+	socks5Client = &socks5.Client{
 		ProxyAddr: net.JoinHostPort(config.Proxy.Socks5Host, config.Proxy.Socks5Port),
-		Auth: map[socks5.METHOD]socks5.Authenticator{
-			socks5.NO_AUTHENTICATION_REQUIRED: &socks5.NoAuth{},
-		},
+		Username:  config.Proxy.Username,
+		Password:  config.Proxy.Password,
 	}
 
 	var wg sync.WaitGroup
@@ -126,14 +126,14 @@ func handleConnection(clientConn *net.TCPConn, isHttps bool) {
 		dstPort = config.Server.HttpsPort
 	}
 
-	backendConn, err := socks5Client.Connect(socks5.Version5, net.JoinHostPort(serverName, dstPort))
+	backendConn, err := socks5Client.Dial(net.JoinHostPort(serverName, dstPort))
 	if err != nil {
-		log.Printf("socks5 connect error: %v", err)
+		log.Printf("socks5 dial error: %v", err)
 		return
 	}
 	defer backendConn.Close()
 
-	copyStreams(clientConn, backendConn, clientReader)
+	copyStreams(clientConn, backendConn.(*net.TCPConn), clientReader)
 }
 
 func peekServerName(clientConn *net.TCPConn, isHttps bool) (string, io.Reader, error) {
